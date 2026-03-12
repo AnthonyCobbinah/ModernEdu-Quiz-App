@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass-card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin:0;">Instructor Control</h2>
+        <span style="font-size: 0.7rem; background: var(--primary); padding: 4px 8px; border-radius: 5px;">LIVE</span>
+    </div>
+    <p style="color: #2460b4; margin-bottom: 30px;">Administrator: {{ current_user.full_name }}</p>
+    
+    <div style="display: grid; gap: 15px;">
+        <button class="btn btn-primary">Create New Quiz</button>
+        <button class="btn" style="background: rgba(255,255,255,0.05); color: white;">View Results</button>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
+    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Terminate Session (Logout)</a>
+</div>
+{% endblock %}

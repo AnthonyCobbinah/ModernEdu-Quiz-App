@@ -1,0 +1,84 @@
+{% extends "layout.html" %}
+{% block content %}
+<div id="landing-hero" style="text-align: center; margin-bottom: 3rem; animation: fadeInDown 0.8s ease-out;">
+    <div style="display: inline-block; padding: 8px 16px; background: rgba(79, 70, 229, 0.1); border-radius: 30px; margin-bottom: 1.5rem;">
+        <span style="color: var(--primary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;">v2.0 Secure Infrastructure</span>
+    </div>
+    <h1 style="font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin: 0; line-height: 1.1;">
+        ModernEdu <span style="color: var(--primary);">Pro</span>
+    </h1>
+    <p style="color: #64748b; font-size: 1.1rem; margin-top: 1rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+        An encrypted, streamlined ecosystem for advanced digital assessments.
+    </p>
+</div>
+
+<div class="portal-grid" style="display: grid; gap: 20px; animation: fadeInUp 0.8s ease-out;">
+    <div class="glass-card interactive-card" onclick="location.href='/register/teacher'" style="cursor: pointer; border-left: 4px solid var(--primary);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="icon-box">👨‍🏫</div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem;">Teacher Portal</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Create quizzes & track performance.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card interactive-card" onclick="location.href='/register/student'" style="cursor: pointer; border-left: 4px solid #10b981;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="icon-box" style="background: rgba(16, 185, 129, 0.1);">🎓</div>
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem;">Student Portal</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b;">Join assessments with session codes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 2.5rem; text-align: center; animation: fadeIn 1.2s ease-in;">
+    <button class="btn btn-primary" onclick="location.href='/login'" style="max-width: 200px; margin: 0 auto; box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);">
+        Secure Sign In
+    </button>
+    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 1.5rem;">
+        Institutional Access Only &bull; Encrypted Session
+    </p>
+</div>
+
+<style>
+    .interactive-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 24px !important;
+    }
+    
+    .interactive-card:hover {
+        transform: translateX(8px);
+        background: white;
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .icon-box {
+        width: 45px;
+        height: 45px;
+        background: rgba(79, 70, 229, 0.1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
+{% endblock %}

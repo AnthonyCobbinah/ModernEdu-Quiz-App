@@ -1,0 +1,109 @@
+
+
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass-card" id="registration-form-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem;">
+        <h2 style="margin: 0; font-weight: 700; font-size: 1.5rem;">{{ role.capitalize() }} Portal</h2>
+        <span style="background: rgba(79, 70, 229, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">New Account</span>
+    </div>
+
+    <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 2rem;">Fill in your credentials to access the ModernEdu infrastructure.</p>
+
+    <form id="registerForm">
+        <div class="input-group">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">Full Name</label>
+            <input type="text" id="full_name" placeholder="John Doe" required>
+        </div>
+
+        {% if role == 'teacher' %}
+        <div class="input-group">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">Username</label>
+            <input type="text" id="username" placeholder="j.doe_teacher" required>
+        </div>
+        {% else %}
+        <div class="input-group">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">Index Number</label>
+            <input type="text" id="index_number" placeholder="20261005" required>
+        </div>
+        {% endif %}
+
+        <div class="input-group">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 8px; display: block;">Secure Password</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="margin-top: 10px;">
+            <span id="btnText">Initialize Registration</span>
+        </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem;">
+        <a href="/" class="nav-link" style="font-size: 0.85rem;">Already have an account? Sign In</a>
+    </div>
+</div>
+
+<div class="glass-card hidden" id="success-state" style="text-align: center; border: 2px solid #10b981;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+    <h2 style="margin-bottom: 0.5rem;">Success!</h2>
+    <p style="color: #64748b; margin-bottom: 2rem;">Your {{ role }} account has been securely provisioned.</p>
+    <a href="/login" class="btn btn-primary" style="display: block; text-decoration: none;">Proceed to Login</a>
+    <a href="/" class="nav-link" style="display: block; margin-top: 1.5rem; font-size: 0.85rem;">← Back to Home</a>
+</div>
+
+<style>
+    .input-group { margin-bottom: 1.25rem; }
+    input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+    .hidden { display: none; }
+    
+    /* Animation for smooth transition */
+    #success-state { animation: slideIn 0.4s ease-out; }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+document.getElementById('registerForm').onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const btn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    
+    // UI Feedback: Loading state
+    btn.style.opacity = "0.7";
+    btnText.innerText = "Provisioning...";
+
+    const payload = {
+        full_name: document.getElementById('full_name').value,
+        password: document.getElementById('password').value,
+        role: "{{ role }}",
+        username: document.getElementById('username') ? document.getElementById('username').value : null,
+        index_number: document.getElementById('index_number') ? document.getElementById('index_number').value : null
+    };
+
+    try {
+        const res = await fetch('/api/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        if(res.ok) {
+            // Hide form, show success back button
+            document.getElementById('registration-form-container').classList.add('hidden');
+            document.getElementById('success-state').classList.remove('hidden');
+        } else {
+            alert("Registration failed. Please try again.");
+            btn.style.opacity = "1";
+            btnText.innerText = "Initialize Registration";
+        }
+    } catch (err) {
+        console.error("Error:", err);
+        btn.style.opacity = "1";
+        btnText.innerText = "Initialize Registration";
+    }
+};
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass-card" id="login-container">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <div style="background: var(--primary); width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <h2 style="margin: 0; font-weight: 700; letter-spacing: -0.02em;">Secure Access</h2>
+        <p style="color: #64748b; font-size: 0.9rem; margin-top: 8px;">Enter your credentials to enter the environment.</p>
+    </div>
+
+    <div id="auth-feedback" class="hidden" style="padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 0.85rem; font-weight: 600;"></div>
+
+    <form id="loginForm">
+        <div class="input-group">
+            <label class="field-label">ID / Username</label>
+            <input type="text" id="login_id" placeholder="Index Number or Username" required>
+        </div>
+
+        <div class="input-group">
+            <label class="field-label">Passkey</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="loginBtn">
+            <span id="btn-text">Authenticate</span>
+        </button>
+    </form>
+
+    <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; text-align: center;">
+        <span style="font-size: 0.85rem; color: #64748b;">New to the platform?</span>
+        <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+            <a href="/register/student" class="nav-link" style="font-size: 0.85rem;">Student Signup</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="/register/teacher" class="nav-link" style="font-size: 0.85rem;">Teacher Signup</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .input-group { margin-bottom: 1.5rem; position: relative; }
+    .field-label { font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: block; }
+    
+    input { 
+        background: #f1f5f9 !important; 
+        border: 2px solid transparent !important; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    input:focus { 
+        background: white !important; 
+        border-color: var(--primary) !important; 
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.1) !important; 
+    }
+
+    .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+    }
+
+    .error-msg { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+    .success-msg { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .hidden { display: none; }
+
+    #login-container { animation: fadeInScale 0.5s ease-out; }
+    @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+<script>
+document.getElementById('loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const btn = document.getElementById('loginBtn');
+    const btnText = document.getElementById('btn-text');
+    const feedback = document.getElementById('auth-feedback');
+    
+    // UI state: Authenticating
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    btnText.innerText = "Verifying Identity...";
+    feedback.classList.add('hidden');
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                login_id: document.getElementById('login_id').value,
+                password: document.getElementById('password').value
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            feedback.innerText = "Authentication Successful. Redirecting...";
+            feedback.className = "success-msg";
+            feedback.classList.remove('hidden');
+            
+            // Artificial delay for smooth feel
+            setTimeout(() => {
+                window.location.href = data.role === 'teacher' ? '/dashboard' : '/student_home';
+            }, 800);
+        } else {
+            throw new Error(data.message || "Invalid credentials provided.");
+        }
+    } catch (err) {
+        feedback.innerText = err.message;
+        feedback.className = "error-msg";
+        feedback.classList.remove('hidden');
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btnText.innerText = "Authenticate";
+    }
+};
+</script>
+{% endblock %}

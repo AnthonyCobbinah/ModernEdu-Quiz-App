@@ -1,0 +1,39 @@
+
+
+{% extends "layout.html" %}
+{% block content %}
+<div style="display:flex; justify-content: space-between; align-items: center;">
+    <h3>Teacher Dashboard</h3>
+    <a href="/logout" class="nav-link">Logout</a>
+</div>
+<div class="glass-card" style="margin-top: 20px;">
+    <h4>Create New Quiz</h4>
+    <input type="text" id="q_title" placeholder="Quiz Title">
+    <input type="text" id="q_subject" placeholder="Subject">
+    <button class="btn btn-primary" id="createQuiz">Generate Code</button>
+</div>
+
+<div id="quizList" style="margin-top: 20px;">
+    {% for q in quizzes %}
+    <div class="glass-card" style="margin-bottom: 15px; padding: 20px;">
+        <strong>{{ q.title }}</strong> | Code: <span style="color:var(--primary)">{{ q.code }}</span>
+        <br><a href="/add_questions/{{ q.id }}" class="nav-link">+ Add Content</a>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.getElementById('createQuiz').onclick = async () => {
+    const res = await fetch('/api/quiz/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            title: document.getElementById('q_title').value,
+            subject: document.getElementById('q_subject').value
+        })
+    });
+    const data = await res.json();
+    if(data.status === 'success') location.reload();
+}
+</script>
+{% endblock %}

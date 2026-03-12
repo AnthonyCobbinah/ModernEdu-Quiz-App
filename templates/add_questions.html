@@ -1,0 +1,14 @@
+
+
+{% extends "layout.html" %}
+{% block content %}
+<a href="/dashboard" class="nav-link">← Back to Dashboard</a>
+<div class="glass-card" style="margin-top: 20px;">
+    <h3>Add Question to {{ quiz.title }}</h3>
+    <form method="POST">
+        <input type="text" name="text" placeholder="Question Text" required>
+        <input type="text" name="answer" placeholder="Correct Answer" required>
+        <button type="submit" class="btn btn-primary">Save to Quiz</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+
+
+{% extends "layout.html" %}
+{% block content %}
+<div class="glass-card">
+    <h2>{{ quiz.title }}</h2>
+    <p style="color: #64748b;">Subject: {{ quiz.subject }}</p>
+    <form action="/submit_quiz/{{ quiz.id }}" method="POST">
+        {% for q in quiz.questions %}
+        <div style="margin-bottom: 25px; padding: 15px; background: #f1f5f9; border-radius: 12px;">
+            <p><strong>{{ loop.index }}. {{ q.text }}</strong></p>
+            <input type="text" name="answer_{{ q.id }}" placeholder="Type answer..." required>
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Finish and Submit</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+# Local Database
+*.db
+instance/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# Environments
+.env
+venv/
+env/
