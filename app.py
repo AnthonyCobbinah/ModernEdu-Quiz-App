@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-pro-2026'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-security-2026-pro'),
     SQLALCHEMY_DATABASE_URI='sqlite:///modern_edu_pro.db',
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
@@ -20,8 +20,8 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
-    username = db.Column(db.String(80), unique=True, nullable=True) # Teacher
-    index_number = db.Column(db.String(80), unique=True, nullable=True) # Student
+    username = db.Column(db.String(80), unique=True) # Teacher
+    index_number = db.Column(db.String(80), unique=True) # Student
     password = db.Column(db.String(200))
     role = db.Column(db.String(20))
 
@@ -29,7 +29,7 @@ class User(UserMixin, db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- VIEWS ---
+# --- ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -44,21 +44,7 @@ def register_page(role):
         return redirect(url_for('index'))
     return render_template('register.html', role=role)
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    if current_user.role != 'teacher':
-        return redirect(url_for('student_home'))
-    return render_template('dashboard.html')
-
-@app.route('/student_home')
-@login_required
-def student_home():
-    if current_user.role != 'student':
-        return redirect(url_for('dashboard'))
-    return render_template('student_home.html')
-
-# --- API ---
+# --- API ENDPOINTS ---
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     data = request.json
@@ -82,7 +68,7 @@ def api_login():
     if user and check_password_hash(user.password, data.get('password')):
         login_user(user)
         return jsonify({"status": "success", "role": user.role})
-    return jsonify({"status": "error", "message": "Verification Failed"}), 401
+    return jsonify({"status": "error", "message": "Invalid Credentials"}), 401
 
 @app.route('/logout')
 def logout():
