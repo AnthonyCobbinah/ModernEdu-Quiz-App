@@ -1,23 +1,34 @@
 {% extends "layout.html" %}
 {% block content %}
-<div style="text-align: center; margin-bottom: 2rem;">
-    <h1 style="font-size: 2.5rem; letter-spacing: -2px;">ModernEdu <span style="color:var(--primary)">Pro</span></h1>
-    <p style="color: #94a3b8;">Secure Assessment Infrastructure v2.0</p>
+<div class="glass-card">
+    <h2>{{ role.capitalize() }} Enrollment</h2>
+    <form id="regForm">
+        <input type="text" id="full_name" placeholder="Full Name" required>
+        {% if role == 'teacher' %}
+            <input type="text" id="username" placeholder="Username" required>
+        {% else %}
+            <input type="text" id="index_number" placeholder="Index Number" required>
+        {% endif %}
+        <input type="password" id="password" placeholder="Passkey" required>
+        <button type="submit" class="btn btn-primary">Initialize Account</button>
+    </form>
 </div>
 
-<div style="display: grid; gap: 15px;">
-    <div class="glass-card" onclick="location.href='/register/teacher'" style="cursor:pointer; transition: 0.3s;">
-        <h3 style="margin:0">Teacher Portal</h3>
-        <p style="font-size:0.8rem; color:#64748b">Provision quizzes and track analytics.</p>
-    </div>
-    
-    <div class="glass-card" onclick="location.href='/register/student'" style="cursor:pointer; transition: 0.3s;">
-        <h3 style="margin:0">Student Portal</h3>
-        <p style="font-size:0.8rem; color:#64748b">Access assessments via secure session codes.</p>
-    </div>
-</div>
-
-<div style="text-align: center; margin-top: 2rem;">
-    <button class="btn btn-primary" onclick="location.href='/login'" style="width:200px">Secure Sign In</button>
-</div>
+<script>
+document.getElementById('regForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            full_name: document.getElementById('full_name').value,
+            password: document.getElementById('password').value,
+            role: "{{ role }}",
+            username: document.getElementById('username')?.value,
+            index_number: document.getElementById('index_number')?.value
+        })
+    });
+    if(res.ok) location.href = '/login';
+};
+</script>
 {% endblock %}
