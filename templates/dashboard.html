@@ -2,162 +2,99 @@
 {% block content %}
 <div class="glass-card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0;">Instructor Control</h2>
-        <span style="font-size: 0.7rem; background: var(--primary); padding: 4px 8px; border-radius: 5px;">LIVE</span>
-    </div>
-    <p style="color: #94a3b8; margin-bottom: 30px;">Administrator: {{ current_user.full_name }}</p>
-    
-    <div style="display: grid; gap: 15px;">
-        <button class="btn btn-primary" onclick="openModal()">Create New Quiz</button>
-        <button class="btn" style="background: rgba(255,255,255,0.05); color: white;">View Results</button>
+        <h2 style="margin:0;">Instructor Dashboard</h2>
+        <button class="btn btn-primary" onclick="openCreateModal()" style="width: auto; padding: 10px 20px;">+ New Quiz</button>
     </div>
 
-    <div id="quizList" style="margin-top: 30px;">
-        <h4 style="color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Active Quizzes</h4>
+    <div id="quizList">
+        <h4 style="color: #64748b; font-size: 0.8rem; text-transform: uppercase; margin-top: 30px;">Your Active Quizzes</h4>
         {% for quiz in quizzes %}
-        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05);">
-            <div>
-                <div style="font-weight: 600;">{{ quiz.title }}</div>
-                <div style="font-size: 0.7rem; color: #64748b;">{{ quiz.subject }}</div>
+        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 600;">{{ quiz.title }}</div>
+                    <code style="color: var(--primary); font-size: 1.1rem;">{{ quiz.code }}</code>
+                </div>
+                <button class="btn" onclick="openQuestionModal('{{ quiz.id }}', '{{ quiz.title }}')" style="width: auto; padding: 8px 15px; background: #22c55e; color: white; font-size: 0.8rem;">Add Questions</button>
             </div>
-            <strong style="color: var(--primary); font-family: monospace; font-size: 1.1rem; letter-spacing: 1px;">{{ quiz.code }}</strong>
         </div>
         {% else %}
-        <p style="font-size: 0.8rem; color: #475569; text-align: center; margin-top: 20px;">No active quizzes found.</p>
+        <p style="color: #64748b; text-align: center;">No quizzes yet.</p>
         {% endfor %}
     </div>
 
     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Terminate Session (Logout)</a>
+    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Logout</a>
 </div>
 
-<div id="quizModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="glass-card" style="width: 90%; max-width: 400px; border: 1px solid var(--primary);">
-        <h3 style="margin-top: 0;">New Quiz Session</h3>
-        
-        <label style="font-size: 0.75rem; color: #94a3b8;">Quiz Title</label>
-        <input type="text" id="quizTitle" placeholder="e.g., Cyber Ethics 101" required>
-        
-        <label style="font-size: 0.75rem; color: #94a3b8;">Subject</label>
-        <input type="text" id="quizSubject" placeholder="e.g., Cybersecurity" required>
-        
-        <button class="btn btn-primary" onclick="submitQuizData()">Generate Access Code</button>
-        <button class="btn" onclick="closeModal()" style="background: transparent; color: #94a3b8; margin-top: 10px;">Cancel</button>
+<div id="createModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+    <div class="glass-card" style="width: 90%; max-width: 400px;">
+        <h3>New Quiz</h3>
+        <input type="text" id="quizTitle" placeholder="Quiz Title">
+        <input type="text" id="quizSubject" placeholder="Subject">
+        <button class="btn btn-primary" onclick="submitQuiz()">Generate Code</button>
+        <button class="btn" onclick="closeModal('createModal')" style="background:transparent; color:#94a3b8;">Cancel</button>
     </div>
 </div>
 
-<script>
-function openModal() {
-    document.getElementById('quizModal').style.display = 'flex';
-}
-
-function closeModal() {
-    document.getElementById('quizModal').style.display = 'none';
-}
-
-async function submitQuizData() {
-    const titleField = document.getElementById('quizTitle');
-    const subjectField = document.getElementById('quizSubject');
-
-    if(!titleField.value || !subjectField.value) {
-        alert("Action Required: Please provide both a title and a subject.");
-        return;
-    }
-
-    // Visual feedback: Change button text while loading
-    const btn = event.target;
-    const originalText = btn.innerText;
-    btn.innerText = "Generating...";
-    btn.disabled = true;
-
-    try {
-        const response = await fetch('/api/quiz/create', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                title: titleField.value, 
-                subject: subjectField.value 
-            })
-        });
-
-        const data = await response.json();
-
-        if(response.ok) {
-            console.log("Quiz created successfully:", data.code);
-            closeModal();
-            location.reload(); // Refresh to show the new code in the list
-        } else {
-            alert("Security Error: " + (data.message || "Could not create quiz."));
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
-    } catch (err) {
-        console.error("Network Error:", err);
-        alert("Connection lost. Please check your internet.");
-        btn.innerText = originalText;
-        btn.disabled = false;
-        <div id="questionModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto;">
-    <div class="glass-card" style="width: 95%; max-width: 500px; margin-top: 50px;">
+<div id="questionModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto;">
+    <div class="glass-card" style="width: 95%; max-width: 500px; margin: 20px;">
         <h3 id="modalQuizTitle">Add Question</h3>
-        <input type="hidden" id="currentQuizId">
-        
-        <textarea id="qText" placeholder="Enter your question here..." style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:white; padding:10px; border-radius:10px;"></textarea>
-        
+        <input type="hidden" id="activeQuizId">
+        <textarea id="qText" placeholder="Question Text" style="width:100%; height:80px; background:rgba(0,0,0,0.3); color:white; border-radius:10px; padding:10px; margin-bottom:10px; border:1px solid #334155;"></textarea>
         <input type="text" id="optA" placeholder="Option A">
         <input type="text" id="optB" placeholder="Option B">
         <input type="text" id="optC" placeholder="Option C">
         <input type="text" id="optD" placeholder="Option D">
-        
-        <label>Correct Answer:</label>
-        <select id="correctAns" style="width:100%; padding:10px; background:#1e293b; color:white; margin-bottom:20px;">
-            <option value="A">A</option>
-            <option value="B">B</option>
-            <option value="C">C</option>
-            <option value="D">D</option>
+        <label style="font-size: 0.8rem; color: #94a3b8;">Correct Answer:</label>
+        <select id="correctOpt" style="width:100%; padding:12px; background:#1e293b; color:white; border-radius:10px; margin-bottom:20px; border:1px solid #334155;">
+            <option value="A">Option A</option>
+            <option value="B">Option B</option>
+            <option value="C">Option C</option>
+            <option value="D">Option D</option>
         </select>
-
-        <button class="btn btn-primary" onclick="submitQuestion()">Save Question</button>
-        <button class="btn" onclick="document.getElementById('questionModal').style.display='none'" style="background:transparent; color:#94a3b8;">Finish</button>
+        <button class="btn btn-primary" onclick="submitQuestion()">Save & Add Another</button>
+        <button class="btn" onclick="location.reload()" style="background:transparent; color:#94a3b8;">Done</button>
     </div>
 </div>
 
 <script>
+function openCreateModal() { document.getElementById('createModal').style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+async function submitQuiz() {
+    const res = await fetch('/api/quiz/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title: document.getElementById('quizTitle').value, subject: document.getElementById('quizSubject').value })
+    });
+    if(res.ok) location.reload();
+}
+
 function openQuestionModal(id, title) {
-    document.getElementById('currentQuizId').value = id;
+    document.getElementById('activeQuizId').value = id;
     document.getElementById('modalQuizTitle').innerText = "Adding to: " + title;
     document.getElementById('questionModal').style.display = 'flex';
 }
 
 async function submitQuestion() {
-    const payload = {
-        quiz_id: document.getElementById('currentQuizId').value,
-        question_text: document.getElementById('qText').value,
-        option_a: document.getElementById('optA').value,
-        option_b: document.getElementById('optB').value,
-        option_c: document.getElementById('optC').value,
-        option_d: document.getElementById('optD').value,
-        correct_answer: document.getElementById('correctAns').value
-    };
-
     const res = await fetch('/api/quiz/add_question', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+            quiz_id: document.getElementById('activeQuizId').value,
+            text: document.getElementById('qText').value,
+            a: document.getElementById('optA').value,
+            b: document.getElementById('optB').value,
+            c: document.getElementById('optC').value,
+            d: document.getElementById('optD').value,
+            correct: document.getElementById('correctOpt').value
+        })
     });
-
     if(res.ok) {
-        alert("Question Added Successfully!");
-        // Clear fields for next question
-        document.getElementById('qText').value = "";
-        document.getElementById('optA').value = "";
-        document.getElementById('optB').value = "";
-        document.getElementById('optC').value = "";
-        document.getElementById('optD').value = "";
-    }
-}
-</script>
+        alert("Question Saved!");
+        ['qText', 'optA', 'optB', 'optC', 'optD'].forEach(id => document.getElementById(id).value = "");
     }
 }
 </script>
 {% endblock %}
-
