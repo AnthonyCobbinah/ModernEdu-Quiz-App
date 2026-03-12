@@ -1,35 +1,77 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="glass-card">
-    <h2 style="text-align: center;">Secure Sign In</h2>
-    <div id="err" style="color: #ff4444; font-size: 0.8rem; text-align: center; margin-bottom: 10px;"></div>
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="margin:0;">Secure Sign In</h2>
+        <p style="color: #64748b; font-size: 0.85rem;">Identity & Access Management</p>
+    </div>
+
+    <div id="err" style="color: #ff4444; font-size: 0.8rem; text-align: center; margin-bottom: 15px; min-height: 1.2rem;"></div>
+
     <form id="logForm">
-        <input type="text" id="login_id" placeholder="Username or Index Number" required>
-        <input type="password" id="password" placeholder="Passkey" required>
-        <button type="submit" class="btn btn-primary">Authenticate</button>
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Credentials</label>
+            <input type="text" id="login_id" placeholder="Username or Index Number" required>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;">Passkey</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" id="authBtn" class="btn btn-primary">Authenticate Session</button>
     </form>
+
     <div style="text-align: center; margin-top: 20px;">
-        <a href="/" class="nav-link">← Back to Selection</a>
+        <a href="/" class="nav-link">← Change Portal</a>
     </div>
 </div>
 
 <script>
 document.getElementById('logForm').onsubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            login_id: document.getElementById('login_id').value,
-            password: document.getElementById('password').value
-        })
-    });
-    const data = await res.json();
-    if(res.ok) {
-        // Redirection logic based on role
-        window.location.href = data.role === 'teacher' ? '/dashboard' : '/student_home';
-    } else {
-        document.getElementById('err').innerText = data.message;
+    
+    const errDiv = document.getElementById('err');
+    const authBtn = document.getElementById('authBtn');
+    
+    // Visual feedback for security processing
+    errDiv.innerText = "";
+    authBtn.innerText = "Verifying...";
+    authBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                login_id: document.getElementById('login_id').value,
+                password: document.getElementById('password').value
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // THE REDIRECTION LOGIC
+            // This reads the 'role' we added to the app.py API response
+            if (data.role === 'teacher') {
+                window.location.href = '/dashboard';
+            } else if (data.role === 'student') {
+                window.location.href = '/student_home';
+            } else {
+                errDiv.innerText = "Error: Unrecognized user role.";
+                authBtn.innerText = "Authenticate Session";
+                authBtn.disabled = false;
+            }
+        } else {
+            errDiv.innerText = data.message || "Authentication failed.";
+            authBtn.innerText = "Authenticate Session";
+            authBtn.disabled = false;
+        }
+    } catch (error) {
+        errDiv.innerText = "Connection Error. Is the server online?";
+        authBtn.innerText = "Authenticate Session";
+        authBtn.disabled = false;
     }
 };
 </script>
