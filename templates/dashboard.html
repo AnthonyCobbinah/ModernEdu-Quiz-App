@@ -96,7 +96,68 @@ async function submitQuizData() {
         alert("Connection lost. Please check your internet.");
         btn.innerText = originalText;
         btn.disabled = false;
+        <div id="questionModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center; overflow-y: auto;">
+    <div class="glass-card" style="width: 95%; max-width: 500px; margin-top: 50px;">
+        <h3 id="modalQuizTitle">Add Question</h3>
+        <input type="hidden" id="currentQuizId">
+        
+        <textarea id="qText" placeholder="Enter your question here..." style="width:100%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:white; padding:10px; border-radius:10px;"></textarea>
+        
+        <input type="text" id="optA" placeholder="Option A">
+        <input type="text" id="optB" placeholder="Option B">
+        <input type="text" id="optC" placeholder="Option C">
+        <input type="text" id="optD" placeholder="Option D">
+        
+        <label>Correct Answer:</label>
+        <select id="correctAns" style="width:100%; padding:10px; background:#1e293b; color:white; margin-bottom:20px;">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+        </select>
+
+        <button class="btn btn-primary" onclick="submitQuestion()">Save Question</button>
+        <button class="btn" onclick="document.getElementById('questionModal').style.display='none'" style="background:transparent; color:#94a3b8;">Finish</button>
+    </div>
+</div>
+
+<script>
+function openQuestionModal(id, title) {
+    document.getElementById('currentQuizId').value = id;
+    document.getElementById('modalQuizTitle').innerText = "Adding to: " + title;
+    document.getElementById('questionModal').style.display = 'flex';
+}
+
+async function submitQuestion() {
+    const payload = {
+        quiz_id: document.getElementById('currentQuizId').value,
+        question_text: document.getElementById('qText').value,
+        option_a: document.getElementById('optA').value,
+        option_b: document.getElementById('optB').value,
+        option_c: document.getElementById('optC').value,
+        option_d: document.getElementById('optD').value,
+        correct_answer: document.getElementById('correctAns').value
+    };
+
+    const res = await fetch('/api/quiz/add_question', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+
+    if(res.ok) {
+        alert("Question Added Successfully!");
+        // Clear fields for next question
+        document.getElementById('qText').value = "";
+        document.getElementById('optA').value = "";
+        document.getElementById('optB').value = "";
+        document.getElementById('optC').value = "";
+        document.getElementById('optD').value = "";
+    }
+}
+</script>
     }
 }
 </script>
 {% endblock %}
+
