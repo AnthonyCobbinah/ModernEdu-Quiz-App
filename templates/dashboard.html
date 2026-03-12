@@ -1,18 +1,78 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="glass-card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin:0;">Instructor Control</h2>
         <span style="font-size: 0.7rem; background: var(--primary); padding: 4px 8px; border-radius: 5px;">LIVE</span>
     </div>
     <p style="color: #94a3b8; margin-bottom: 30px;">Administrator: {{ current_user.full_name }}</p>
     
     <div style="display: grid; gap: 15px;">
-        <button class="btn btn-primary">Create New Quiz</button>
+        <button class="btn btn-primary" onclick="openModal()">Create New Quiz</button>
         <button class="btn" style="background: rgba(255,255,255,0.05); color: white;">View Results</button>
+    </div>
+
+    <div id="quizList" style="margin-top: 30px;">
+        <h4 style="color: #64748b; font-size: 0.8rem; text-transform: uppercase;">Active Quizzes</h4>
+        {% for quiz in quizzes %}
+        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-top: 10px; display: flex; justify-content: space-between;">
+            <span>{{ quiz.title }}</span>
+            <strong style="color: var(--primary);">{{ quiz.code }}</strong>
+        </div>
+        {% else %}
+        <p style="font-size: 0.8rem; color: #475569;">No active quizzes yet.</p>
+        {% endfor %}
     </div>
 
     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
     <a href="/logout" class="nav-link" style="display: block; text-align: center;">Terminate Session (Logout)</a>
 </div>
+
+<div id="quizModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="glass-card" style="width: 90%; max-width: 400px;">
+        <h3>Create Quiz</h3>
+        <input type="text" id="quizTitle" placeholder="Quiz Title (e.g. Cyber Basics)" required>
+        <input type="text" id="quizSubject" placeholder="Subject" required>
+        <button class="btn btn-primary" onclick="submitQuiz()">Generate Code</button>
+        <button class="btn" onclick="closeModal()" style="background: transparent; color: #94a3b8; margin-top: 10px;">Cancel</button>
+    </div>
+</div>
+
+<script>
+// Open the popup
+function openModal() {
+    document.getElementById('quizModal').style.display = 'flex';
+}
+
+// Close the popup
+function closeModal() {
+    document.getElementById('quizModal').style.display = 'none';
+}
+
+// Send data to app.py
+async function submitQuiz() {
+    const title = document.getElementById('quizTitle').value;
+    const subject = document.getElementById('quizSubject').value;
+
+    if(!title || !subject) {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    const response = await fetch('/api/quiz/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title, subject })
+    });
+
+    const data = await response.json();
+
+    if(response.ok) {
+        alert("Success! Your Quiz Code is: " + data.code);
+        location.reload(); // Refreshes the page to show the new quiz in the list
+    } else {
+        alert("Error: " + data.message);
+    }
+}
+</script>
 {% endblock %}
