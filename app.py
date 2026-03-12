@@ -16,15 +16,13 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# --- MODELS ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
-    username = db.Column(db.String(80), unique=True, nullable=True) # For Teachers
-    index_number = db.Column(db.String(80), unique=True, nullable=True) # For Students
+    username = db.Column(db.String(80), unique=True, nullable=True)
+    index_number = db.Column(db.String(80), unique=True, nullable=True)
     password = db.Column(db.String(200))
     role = db.Column(db.String(20))
-    # Relationship: A teacher can have many quizzes
     quizzes = db.relationship('Quiz', backref='creator', lazy=True)
 
 class Quiz(db.Model):
@@ -38,7 +36,6 @@ class Quiz(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- PAGE ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -49,8 +46,6 @@ def login():
 
 @app.route('/register/<role>')
 def register_page(role):
-    if role not in ['teacher', 'student']:
-        return redirect(url_for('index'))
     return render_template('register.html', role=role)
 
 @app.route('/dashboard')
@@ -58,18 +53,15 @@ def register_page(role):
 def dashboard():
     if current_user.role != 'teacher':
         return redirect(url_for('student_home'))
-    # Fetch quizzes created by this teacher to show on the dashboard
+    # If this fails, it's a 500 error. Delete the .db file to fix!
     user_quizzes = Quiz.query.filter_by(teacher_id=current_user.id).all()
     return render_template('dashboard.html', quizzes=user_quizzes)
 
 @app.route('/student_home')
 @login_required
 def student_home():
-    if current_user.role != 'student':
-        return redirect(url_for('dashboard'))
     return render_template('student_home.html')
 
-# --- AUTHENTICATION API ---
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     data = request.json
@@ -95,24 +87,12 @@ def api_login():
         return jsonify({"status": "success", "role": user.role})
     return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
-# --- QUIZ ENGINE API ---
 @app.route('/api/quiz/create', methods=['POST'])
 @login_required
 def api_create_quiz():
-    if current_user.role != 'teacher':
-        return jsonify({"status": "error", "message": "Unauthorized"}), 403
-    
     data = request.json
-    # Generate a unique 6-digit code
     quiz_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
-    
-    new_quiz = Quiz(
-        code=quiz_code,
-        title=data['title'],
-        subject=data['subject'],
-        teacher_id=current_user.id
-    )
-    
+    new_quiz = Quiz(code=quiz_code, title=data['title'], subject=data['subject'], teacher_id=current_user.id)
     db.session.add(new_quiz)
     db.session.commit()
     return jsonify({"status": "success", "code": quiz_code})
@@ -122,7 +102,6 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- DB INITIALIZATION ---
 with app.app_context():
     db.create_all()
 
