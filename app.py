@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-pro-2026'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-pro-2026-secure-key'),
     SQLALCHEMY_DATABASE_URI='sqlite:///modern_edu_pro.db',
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
@@ -20,16 +20,25 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
-    username = db.Column(db.String(80), unique=True, nullable=True) # Teacher
-    index_number = db.Column(db.String(80), unique=True, nullable=True) # Student
+    username = db.Column(db.String(80), unique=True, nullable=True) # For Teachers
+    index_number = db.Column(db.String(80), unique=True, nullable=True) # For Students
     password = db.Column(db.String(200))
     role = db.Column(db.String(20))
+    # Relationship: A teacher can have many quizzes
+    quizzes = db.relationship('Quiz', backref='creator', lazy=True)
+
+class Quiz(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(6), unique=True, index=True)
+    title = db.Column(db.String(100), nullable=False)
+    subject = db.Column(db.String(100))
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- VIEWS ---
+# --- PAGE ROUTES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -49,7 +58,9 @@ def register_page(role):
 def dashboard():
     if current_user.role != 'teacher':
         return redirect(url_for('student_home'))
-    return render_template('dashboard.html')
+    # Fetch quizzes created by this teacher to show on the dashboard
+    user_quizzes = Quiz.query.filter_by(teacher_id=current_user.id).all()
+    return render_template('dashboard.html', quizzes=user_quizzes)
 
 @app.route('/student_home')
 @login_required
@@ -58,7 +69,7 @@ def student_home():
         return redirect(url_for('dashboard'))
     return render_template('student_home.html')
 
-# --- API ---
+# --- AUTHENTICATION API ---
 @app.route('/api/auth/register', methods=['POST'])
 def api_register():
     data = request.json
@@ -82,13 +93,36 @@ def api_login():
     if user and check_password_hash(user.password, data.get('password')):
         login_user(user)
         return jsonify({"status": "success", "role": user.role})
-    return jsonify({"status": "error", "message": "Verification Failed"}), 401
+    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
+
+# --- QUIZ ENGINE API ---
+@app.route('/api/quiz/create', methods=['POST'])
+@login_required
+def api_create_quiz():
+    if current_user.role != 'teacher':
+        return jsonify({"status": "error", "message": "Unauthorized"}), 403
+    
+    data = request.json
+    # Generate a unique 6-digit code
+    quiz_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    new_quiz = Quiz(
+        code=quiz_code,
+        title=data['title'],
+        subject=data['subject'],
+        teacher_id=current_user.id
+    )
+    
+    db.session.add(new_quiz)
+    db.session.commit()
+    return jsonify({"status": "success", "code": quiz_code})
 
 @app.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('index'))
 
+# --- DB INITIALIZATION ---
 with app.app_context():
     db.create_all()
 
