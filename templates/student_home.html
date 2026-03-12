@@ -1,18 +1,40 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="glass-card">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin:0;">Instructor Control</h2>
-        <span style="font-size: 0.7rem; background: var(--primary); padding: 4px 8px; border-radius: 5px;">LIVE</span>
-    </div>
-    <p style="color: #2460b4; margin-bottom: 30px;">Administrator: {{ current_user.full_name }}</p>
-    
-    <div style="display: grid; gap: 15px;">
-        <button class="btn btn-primary">Create New Quiz</button>
-        <button class="btn" style="background: rgba(255,255,255,0.05); color: white;">View Results</button>
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2 style="margin:0;">Student Portal</h2>
+        <p style="color: #94a3b8; font-size: 0.85rem;">Secure Assessment Environment</p>
     </div>
 
+    <div style="background: rgba(255,255,255,0.03); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);">
+        <label style="display: block; margin-bottom: 10px; font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Enter Quiz Code</label>
+        <input type="text" id="quizCode" placeholder="6-digit code (e.g. 123456)" 
+               style="font-size: 1.5rem; text-align: center; letter-spacing: 5px; font-family: monospace;">
+        
+        <button class="btn btn-primary" onclick="joinQuiz()" style="margin-top: 10px;">Verify & Join Session</button>
+    </div>
+
+    <p id="statusMsg" style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #ff4444;"></p>
+
     <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Terminate Session (Logout)</a>
+    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Secure Logout</a>
 </div>
+
+<script>
+async function joinQuiz() {
+    const code = document.getElementById('quizCode').value;
+    const msg = document.getElementById('statusMsg');
+    
+    if(code.length !== 6) {
+        msg.innerText = "Error: Code must be 6 digits.";
+        return;
+    }
+
+    // This will point to the quiz attempt page once we build it
+    msg.style.color = "#4ade80";
+    msg.innerText = "Verifying secure connection...";
+    
+    // Future step: window.location.href = '/quiz/attempt/' + code;
+}
+</script>
 {% endblock %}
