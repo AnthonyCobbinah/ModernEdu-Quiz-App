@@ -9,12 +9,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-security-2026-v6'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-security-dev-2026'),
     SQLALCHEMY_DATABASE_URI='sqlite:///modern_edu_pro.db',
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
 
-# --- CONFIGURE AI ---
+# --- AI CONFIG ---
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -26,8 +26,8 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
-    username = db.Column(db.String(80), unique=True, nullable=True)
-    index_number = db.Column(db.String(80), unique=True, nullable=True)
+    username = db.Column(db.String(80), unique=True)
+    index_number = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     quizzes = db.relationship('Quiz', backref='creator', lazy=True)
@@ -54,15 +54,9 @@ class Question(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- NAVIGATION ROUTES ---
+# --- ROUTES ---
 @app.route('/')
 def index(): return render_template('index.html')
-
-@app.route('/login')
-def login(): return render_template('login.html')
-
-@app.route('/register/<role>')
-def register_page(role): return render_template('register.html', role=role)
 
 @app.route('/dashboard')
 @login_required
@@ -70,37 +64,36 @@ def dashboard():
     if current_user.role != 'teacher': return redirect(url_for('student_home'))
     return render_template('dashboard.html', quizzes=current_user.quizzes)
 
-@app.route('/student_home')
+# --- API: CREATE QUIZ ---
+@app.route('/api/quiz/create_with_ai', methods=['POST'])
 @login_required
-def student_home():
-    if current_user.role != 'student': return redirect(url_for('dashboard'))
-    return render_template('student_home.html')
+def create_with_ai():
+    # Use request.form for multipart/form-data (buttons & file uploads)
+    title = request.form.get('title')
+    subject = request.form.get('subject')
+    
+    if not title or not subject:
+        return jsonify({"status": "error", "message": "Missing title or subject"}), 400
 
-# --- AUTHENTICATION API ---
-@app.route('/api/auth/register', methods=['POST'])
-def api_register():
-    data = request.json
-    hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
-    new_user = User(full_name=data['full_name'], username=data.get('username'),
-                    index_number=data.get('index_number'), password=hashed_pw, role=data['role'])
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"status": "success"})
+    quiz_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    
+    try:
+        new_quiz = Quiz(code=quiz_code, title=title, subject=subject, teacher_id=current_user.id)
+        db.session.add(new_quiz)
+        db.session.commit()
+        
+        # Note: We aren't forcing AI question generation here yet to ensure 
+        # the "Initialize" part works first. 
+        return jsonify({"status": "success", "code": quiz_code})
+    except Exception as e:
+        db.session.rollback()
+        print(f"DEBUG ERROR: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/api/auth/login', methods=['POST'])
-def api_login():
-    data = request.json
-    uid = data.get('login_id')
-    user = User.query.filter((User.username == uid) | (User.index_number == uid)).first()
-    if user and check_password_hash(user.password, data.get('password')):
-        login_user(user)
-        return jsonify({"status": "success", "role": user.role})
-    return jsonify({"status": "error", "message": "Invalid credentials"}), 401
-
-# --- MANUAL & BULK QUESTION API ---
+# --- API: MANUAL & BULK QUESTIONS ---
 @app.route('/api/quiz/add_question', methods=['POST'])
 @login_required
-def api_add_question():
+def add_question():
     data = request.json
     new_q = Question(
         quiz_id=data['quiz_id'], text=data['text'], 
@@ -115,55 +108,31 @@ def api_add_question():
 @login_required
 def bulk_paste():
     data = request.json
-    quiz_id = data.get('quiz_id')
-    raw_text = data.get('text')
-    
-    lines = raw_text.strip().split('\n')
+    lines = data.get('text', '').strip().split('\n')
     count = 0
     for line in lines:
-        if '|' in line:
-            parts = [p.strip() for p in line.split('|')]
-            if len(parts) == 6:
-                new_q = Question(
-                    quiz_id=quiz_id, text=parts[0], 
-                    option_a=parts[1], option_b=parts[2], 
-                    option_c=parts[3], option_d=parts[4], correct=parts[5].upper()
-                )
-                db.session.add(new_q)
-                count += 1
-    
+        parts = [p.strip() for p in line.split('|')]
+        if len(parts) == 6:
+            new_q = Question(
+                quiz_id=data['quiz_id'], text=parts[0], 
+                option_a=parts[1], option_b=parts[2], 
+                option_c=parts[3], option_d=parts[4], correct=parts[5].upper()
+            )
+            db.session.add(new_q)
+            count += 1
     db.session.commit()
     return jsonify({"status": "success", "count": count})
 
-# --- AI QUIZ GENERATION API ---
-@app.route('/api/quiz/create_with_ai', methods=['POST'])
-@login_required
-def create_with_ai():
-    if current_user.role != 'teacher': return jsonify({"status": "error"}), 403
-    title, subject = request.form.get('title'), request.form.get('subject')
-    file = request.files.get('file')
-    content = file.read().decode('utf-8') if file else f"General knowledge about {subject}"
-    
-    prompt = f"Generate 5 MCQs about {subject} based on: {content}. Return ONLY JSON list: [{{'text': '...', 'a': '...', 'b': '...', 'c': '...', 'd': '...', 'correct': 'A'}}]"
-    
-    try:
-        response = model.generate_content(prompt)
-        raw_json = response.text.replace('```json', '').replace('```', '').strip()
-        questions_data = json.loads(raw_json)
-
-        quiz_code = "".join([str(random.randint(0, 9)) for _ in range(6)])
-        new_quiz = Quiz(code=quiz_code, title=title, subject=subject, teacher_id=current_user.id)
-        db.session.add(new_quiz)
-        db.session.commit()
-
-        for q in questions_data:
-            new_q = Question(quiz_id=new_quiz.id, text=q['text'], option_a=q['a'], 
-                             option_b=q['b'], option_c=q['c'], option_d=q['d'], correct=q['correct'])
-            db.session.add(new_q)
-        db.session.commit()
-        return jsonify({"status": "success", "code": quiz_code})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+# --- AUTH ---
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.json
+    uid = data.get('login_id')
+    user = User.query.filter((User.username == uid) | (User.index_number == uid)).first()
+    if user and check_password_hash(user.password, data.get('password')):
+        login_user(user)
+        return jsonify({"status": "success", "role": user.role})
+    return jsonify({"status": "error"}), 401
 
 @app.route('/logout')
 def logout():
@@ -174,5 +143,4 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
