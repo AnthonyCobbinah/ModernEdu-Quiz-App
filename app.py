@@ -16,7 +16,7 @@ app.config.update(
 )
 
 # --- CONFIGURE AI ---
-genai.configure(api_key="AIzaSyClMBgTm5LJS1W5lJseLfKuYCGOHGHcRIs")
+genai.configure(api_key="    ")
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 db = SQLAlchemy(app)
