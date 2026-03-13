@@ -1,17 +1,17 @@
 dashboard.html
 
-<div id="createModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+<div id="createModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(40, 6, 163, 0.8); z-index: 1000; align-items: center; justify-content: center;">
     <div class="glass-card" style="width: 90%; max-width: 400px;">
         <h3>AI Quiz Generator</h3>
         <form id="aiForm">
             <input type="text" id="quizTitle" placeholder="Quiz Title" required>
             <input type="text" id="quizSubject" placeholder="Subject (e.g. Science)" required>
             
-            <label style="font-size: 0.7rem; color: #94a3b8; display: block; margin-top: 10px;">Upload Study Material (Optional)</label>
+            <label style="font-size: 0.7rem; color: #f8f9fc; display: block; margin-top: 10px;">Upload Study Material (Optional)</label>
             <input type="file" id="quizFile" accept=".txt,.pdf" style="margin-top: 5px;">
             
             <button type="button" class="btn btn-primary" onclick="submitAIQuiz()" id="aiBtn">Generate with AI</button>
-            <button type="button" class="btn" onclick="closeModal('createModal')" style="background:transparent; color:#94a3b8;">Cancel</button>
+            <button type="button" class="btn" onclick="closeModal('createModal')" style="background:transparent; color:#f5f7f9;">Cancel</button>
         </form>
     </div>
 </div>
