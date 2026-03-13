@@ -9,13 +9,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config.update(
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-security-2026-v5'),
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'cyber-security-2026-v6'),
     SQLALCHEMY_DATABASE_URI='sqlite:///modern_edu_pro.db',
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
 
-# --- CONFIGURE AI SECURELY ---
-# It will now look for the GEMINI_API_KEY in your Render Environment Variables
+# --- CONFIGURE AI ---
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel('gemini-1.5-flash')
 
@@ -27,8 +26,8 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100), nullable=False)
-    username = db.Column(db.String(80), unique=True, nullable=True)     # For Teachers
-    index_number = db.Column(db.String(80), unique=True, nullable=True) # For Students
+    username = db.Column(db.String(80), unique=True, nullable=True)
+    index_number = db.Column(db.String(80), unique=True, nullable=True)
     password = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     quizzes = db.relationship('Quiz', backref='creator', lazy=True)
@@ -82,13 +81,8 @@ def student_home():
 def api_register():
     data = request.json
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
-    new_user = User(
-        full_name=data['full_name'], 
-        username=data.get('username'),
-        index_number=data.get('index_number'), 
-        password=hashed_pw, 
-        role=data['role']
-    )
+    new_user = User(full_name=data['full_name'], username=data.get('username'),
+                    index_number=data.get('index_number'), password=hashed_pw, role=data['role'])
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"status": "success"})
@@ -103,29 +97,57 @@ def api_login():
         return jsonify({"status": "success", "role": user.role})
     return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
+# --- MANUAL & BULK QUESTION API ---
+@app.route('/api/quiz/add_question', methods=['POST'])
+@login_required
+def api_add_question():
+    data = request.json
+    new_q = Question(
+        quiz_id=data['quiz_id'], text=data['text'], 
+        option_a=data['a'], option_b=data['b'], 
+        option_c=data['c'], option_d=data['d'], correct=data['correct']
+    )
+    db.session.add(new_q)
+    db.session.commit()
+    return jsonify({"status": "success"})
+
+@app.route('/api/quiz/bulk_paste', methods=['POST'])
+@login_required
+def bulk_paste():
+    data = request.json
+    quiz_id = data.get('quiz_id')
+    raw_text = data.get('text')
+    
+    lines = raw_text.strip().split('\n')
+    count = 0
+    for line in lines:
+        if '|' in line:
+            parts = [p.strip() for p in line.split('|')]
+            if len(parts) == 6:
+                new_q = Question(
+                    quiz_id=quiz_id, text=parts[0], 
+                    option_a=parts[1], option_b=parts[2], 
+                    option_c=parts[3], option_d=parts[4], correct=parts[5].upper()
+                )
+                db.session.add(new_q)
+                count += 1
+    
+    db.session.commit()
+    return jsonify({"status": "success", "count": count})
+
 # --- AI QUIZ GENERATION API ---
 @app.route('/api/quiz/create_with_ai', methods=['POST'])
 @login_required
 def create_with_ai():
     if current_user.role != 'teacher': return jsonify({"status": "error"}), 403
-    
-    title = request.form.get('title')
-    subject = request.form.get('subject')
+    title, subject = request.form.get('title'), request.form.get('subject')
     file = request.files.get('file')
-    
-    # Read text from file if uploaded, otherwise use subject context
     content = file.read().decode('utf-8') if file else f"General knowledge about {subject}"
     
-    prompt = f"""
-    Generate 5 multiple-choice questions about {subject} based on this text: {content}.
-    Format the response as a valid JSON list of objects.
-    Each object must have: "text", "a", "b", "c", "d", and "correct" (A, B, C, or D).
-    Return ONLY the JSON.
-    """
+    prompt = f"Generate 5 MCQs about {subject} based on: {content}. Return ONLY JSON list: [{{'text': '...', 'a': '...', 'b': '...', 'c': '...', 'd': '...', 'correct': 'A'}}]"
     
     try:
         response = model.generate_content(prompt)
-        # Clean AI response to ensure it's pure JSON
         raw_json = response.text.replace('```json', '').replace('```', '').strip()
         questions_data = json.loads(raw_json)
 
@@ -135,13 +157,9 @@ def create_with_ai():
         db.session.commit()
 
         for q in questions_data:
-            new_q = Question(
-                quiz_id=new_quiz.id, text=q['text'], 
-                option_a=q['a'], option_b=q['b'], 
-                option_c=q['c'], option_d=q['d'], correct=q['correct']
-            )
+            new_q = Question(quiz_id=new_quiz.id, text=q['text'], option_a=q['a'], 
+                             option_b=q['b'], option_c=q['c'], option_d=q['d'], correct=q['correct'])
             db.session.add(new_q)
-        
         db.session.commit()
         return jsonify({"status": "success", "code": quiz_code})
     except Exception as e:
@@ -152,7 +170,6 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# --- DB INITIALIZATION ---
 with app.app_context():
     db.create_all()
 
