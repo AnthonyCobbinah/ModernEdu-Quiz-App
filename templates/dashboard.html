@@ -1,139 +1,73 @@
-{% extends "layout.html" %}
-{% block content %}
-<div class="glass-card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0;">Instructor Dashboard</h2>
-        <button class="btn btn-primary" onclick="toggleModal('createModal', 'flex')" style="width: auto; padding: 10px 20px;">+ Create New Quiz</button>
-    </div>
-
-    <div id="quizList">
-        <h4 style="color: #64748b; font-size: 0.8rem; text-transform: uppercase; margin-top: 30px;">Your Active Quizzes</h4>
-        {% for quiz in quizzes %}
-        <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-weight: 600;">{{ quiz.title }}</div>
-                <code style="color: var(--primary); font-size: 1.1rem;">{{ quiz.code }}</code>
-            </div>
-            <button class="btn" onclick="openManualModal('{{ quiz.id }}', '{{ quiz.title }}')" style="width: auto; padding: 8px 15px; background: #22c55e; color: white; font-size: 0.8rem;">Manage Questions</button>
-        </div>
-        {% else %}
-        <p style="color: #64748b; text-align: center; margin-top: 20px;">No quizzes found.</p>
-        {% endfor %}
-    </div>
-
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;">
-    <a href="/logout" class="nav-link" style="display: block; text-align: center;">Logout</a>
-</div>
-
 <div id="createModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="glass-card" style="width: 90%; max-width: 400px;">
-        <h3>New Quiz Details</h3>
-        <input type="text" id="aiTitle" placeholder="Quiz Title (e.g. Science Quiz)">
-        <input type="text" id="aiSubject" placeholder="Subject">
-        <button class="btn btn-primary" onclick="submitAIQuiz()">Initialize Quiz</button>
-        <button class="btn" onclick="toggleModal('createModal', 'none')" style="background:transparent; color:#94a3b8;">Cancel</button>
-    </div>
-</div>
-
-<div id="manualModal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; overflow-y: auto;">
-    <div class="glass-card" style="width: 95%; max-width: 550px; margin: 20px;">
-        <h3 id="modalQuizTitle">Manage Questions</h3>
-        <input type="hidden" id="activeQuizId">
-
-        <div style="margin-bottom: 25px;">
-            <p style="color: var(--primary); font-size: 0.75rem; font-weight: bold;">OPTION 1: ADD SINGLE QUESTION</p>
-            <textarea id="qText" placeholder="Question Text" style="width:100%; background:rgba(255,255,255,0.05); color:white; border-radius:8px; padding:10px; margin-bottom:10px; border:1px solid #334155;"></textarea>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="text" id="optA" placeholder="Option A">
-                <input type="text" id="optB" placeholder="Option B">
-                <input type="text" id="optC" placeholder="Option C">
-                <input type="text" id="optD" placeholder="Option D">
+    <div class="glass-card" style="width: 90%; max-width: 400px; border: 1px solid var(--primary);">
+        <h3>Initialize New Quiz</h3>
+        
+        <form id="quizForm">
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 0.7rem; color: #94a3b8;">QUIZ TITLE</label>
+                <input type="text" id="aiTitle" placeholder="e.g. Mid-term Exam" required>
             </div>
-            <select id="correctOpt" style="width:100%; padding:10px; background:#1e293b; color:white; margin: 10px 0;">
-                <option value="A">Correct: A</option>
-                <option value="B">Correct: B</option>
-                <option value="C">Correct: C</option>
-                <option value="D">Correct: D</option>
-            </select>
-            <button class="btn btn-primary" onclick="submitSingleQuestion()" style="background: #22c55e;">Save Single Question</button>
-        </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-size: 0.7rem; color: #94a3b8;">SUBJECT</label>
+                <input type="text" id="aiSubject" placeholder="e.g. Computer Science" required>
+            </div>
 
-        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+            <div style="margin-bottom: 20px;">
+                <label style="font-size: 0.7rem; color: #94a3b8;">STUDY MATERIAL (OPTIONAL)</label>
+                <input type="file" id="aiFile" accept=".txt,.pdf">
+            </div>
 
-        <div>
-            <p style="color: var(--primary); font-size: 0.75rem; font-weight: bold;">OPTION 2: BULK PASTE (FASTEST)</p>
-            <p style="font-size: 0.65rem; color: #94a3b8; margin-bottom: 10px;">Format: Question | A | B | C | D | CorrectLetter</p>
-            <textarea id="bulkArea" placeholder="Who is the father of AI? | Turing | Musk | Gates | Jobs | A" style="width:100%; height:120px; background:rgba(0,0,0,0.3); color:white; font-family: monospace; font-size: 0.8rem; padding:10px; border-radius:8px; border:1px solid #334155;"></textarea>
-            <button class="btn" onclick="submitBulkPaste()" style="margin-top:10px; background: #6366f1; color: white;">Process Bulk List</button>
-        </div>
-
-        <button class="btn" onclick="location.reload()" style="background:transparent; color:#94a3b8; margin-top: 20px; width: 100%;">Close & Refresh List</button>
+            <button type="button" class="btn btn-primary" onclick="submitAIQuiz()" id="initBtn">Create Quiz Session</button>
+            <button type="button" class="btn" onclick="toggleModal('createModal', 'none')" style="background:transparent; color:#94a3b8; margin-top: 10px;">Cancel</button>
+        </form>
     </div>
 </div>
 
 <script>
-function toggleModal(id, state) { document.getElementById(id).style.display = state; }
-
-function openManualModal(id, title) {
-    document.getElementById('activeQuizId').value = id;
-    document.getElementById('modalQuizTitle').innerText = title;
-    toggleModal('manualModal', 'flex');
-}
-
-// HANDLER: SINGLE QUESTION
-async function submitSingleQuestion() {
-    const payload = {
-        quiz_id: document.getElementById('activeQuizId').value,
-        text: document.getElementById('qText').value,
-        a: document.getElementById('optA').value,
-        b: document.getElementById('optB').value,
-        c: document.getElementById('optC').value,
-        d: document.getElementById('optD').value,
-        correct: document.getElementById('correctOpt').value
-    };
-
-    const res = await fetch('/api/quiz/add_question', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-    });
-
-    if(res.ok) {
-        alert("Question Saved!");
-        ['qText', 'optA', 'optB', 'optC', 'optD'].forEach(i => document.getElementById(i).value = "");
-    }
-}
-
-// HANDLER: BULK PASTE
-async function submitBulkPaste() {
-    const text = document.getElementById('bulkArea').value;
-    const quizId = document.getElementById('activeQuizId').value;
-
-    if(!text) return alert("Paste your list first!");
-
-    const res = await fetch('/api/quiz/bulk_paste', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ quiz_id: quizId, text: text })
-    });
-
-    if(res.ok) {
-        const data = await res.json();
-        alert(`Successfully added ${data.count} questions!`);
-        document.getElementById('bulkArea').value = "";
-    } else {
-        alert("Error parsing list. Ensure you use the | symbol correctly.");
-    }
-}
-
-// HANDLER: INITIALIZE QUIZ (Manual start)
 async function submitAIQuiz() {
-    // This creates the Quiz record first so you can add questions to it
-    const res = await fetch('/api/quiz/create_with_ai', {
-        method: 'POST',
-        body: new FormData(document.getElementById('aiForm')) // Reuse your existing AI form logic
-    });
-    if(res.ok) location.reload();
+    const btn = document.getElementById('initBtn');
+    const title = document.getElementById('aiTitle').value;
+    const subject = document.getElementById('aiSubject').value;
+    const fileField = document.getElementById('aiFile');
+
+    // 1. Validation
+    if(!title || !subject) {
+        alert("Please provide both a Title and a Subject.");
+        return;
+    }
+
+    // 2. Prepare Data (Multipart for file support)
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('subject', subject);
+    if(fileField.files[0]) {
+        formData.append('file', fileField.files[0]);
+    }
+
+    // 3. UI Feedback
+    btn.innerText = "Initializing...";
+    btn.disabled = true;
+
+    // 4. Send to Python API
+    try {
+        const res = await fetch('/api/quiz/create_with_ai', {
+            method: 'POST',
+            body: formData 
+        });
+
+        if(res.ok) {
+            location.reload(); // Success!
+        } else {
+            const errData = await res.json();
+            alert("Error: " + (errData.message || "Failed to initialize."));
+            btn.innerText = "Create Quiz Session";
+            btn.disabled = false;
+        }
+    } catch (error) {
+        alert("Network Error: Could not connect to the server.");
+        btn.innerText = "Create Quiz Session";
+        btn.disabled = false;
+    }
 }
 </script>
-{% endblock %}
